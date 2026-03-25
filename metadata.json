@@ -1,0 +1,9 @@
+{
+  "name": "Smart Samadhan",
+  "description": "A citizen-centric civic-tech platform for reporting urban issues with AI-powered routing and urgency prediction.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone",
+    "geolocation"
+  ]
+}

@@ -1,0 +1,88 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && 
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+         (request.auth.token.email == "tejreddy2005@gmail.com" && request.auth.token.email_verified == true));
+    }
+    
+    function isDepartment() {
+      return isAuthenticated() && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'department';
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+    function isValidUser(data) {
+      return hasOnlyAllowedFields(['uid', 'email', 'displayName', 'role', 'points', 'streak', 'createdAt', 'departmentName']) &&
+             data.uid is string &&
+             data.email is string && data.email.size() < 100 &&
+             data.displayName is string && data.displayName.size() < 100 &&
+             data.role in ['citizen', 'department', 'admin'] &&
+             data.points is int &&
+             data.createdAt is int;
+    }
+
+    function isValidIssue(data) {
+      return hasOnlyAllowedFields(['title', 'description', 'category', 'status', 'urgency', 'location', 'reporterId', 'reporterName', 'createdAt', 'updatedAt', 'rewardPoints', 'mediaUrl', 'mediaType', 'contactNumber', 'assignedDepartment', 'masterTicketId', 'fixedMediaUrl', 'aiAnalysis']) &&
+             data.title is string && data.title.size() < 100 &&
+             data.category is string && data.category.size() < 50 &&
+             data.status in ['pending', 'ai-verified', 'in-progress', 'resolved'] &&
+             data.urgency in ['low', 'medium', 'high', 'critical'] &&
+             data.location is map &&
+             data.reporterId is string &&
+             data.createdAt is int;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+    
+    // User profiles
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      
+      allow create: if isOwner(userId) && isValidUser(request.resource.data) && 
+                    request.resource.data.uid == request.auth.uid;
+      allow update: if (isOwner(userId) && isValidUser(request.resource.data) && 
+                        request.resource.data.uid == resource.data.uid &&
+                        request.resource.data.role == resource.data.role &&
+                        request.resource.data.createdAt == resource.data.createdAt) || isAdmin();
+    }
+
+    // Issues
+    match /issues/{issueId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidIssue(request.resource.data) && 
+                    request.resource.data.reporterId == request.auth.uid;
+      allow update: if (isDepartment() || isAdmin() || (isAuthenticated() && resource.data.reporterId == request.auth.uid)) && 
+                    isValidIssue(request.resource.data) &&
+                    request.resource.data.reporterId == resource.data.reporterId &&
+                    request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if isAdmin();
+    }
+
+    // Departments
+    match /departments/{deptId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+  }
+}

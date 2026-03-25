@@ -1,0 +1,83 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile information including role and points.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "displayName": { "type": "string" },
+        "role": { "type": "string", "enum": ["citizen", "department", "admin"] },
+        "points": { "type": "integer" },
+        "createdAt": { "type": "integer" },
+        "departmentName": { "type": "string" }
+      },
+      "required": ["uid", "email", "role"]
+    },
+    "Issue": {
+      "title": "Issue",
+      "description": "A civic issue reported by a citizen.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "category": { "type": "string" },
+        "urgency": { "type": "string", "enum": ["low", "medium", "high", "critical"] },
+        "status": { "type": "string", "enum": ["pending", "ai-verified", "in-progress", "resolved"] },
+        "location": {
+          "type": "object",
+          "properties": {
+            "lat": { "type": "number" },
+            "lng": { "type": "number" },
+            "address": { "type": "string" }
+          }
+        },
+        "mediaUrl": { "type": "string" },
+        "mediaType": { "type": "string", "enum": ["image", "video"] },
+        "reporterId": { "type": "string" },
+        "reporterName": { "type": "string" },
+        "contactNumber": { "type": "string" },
+        "createdAt": { "type": "integer" },
+        "updatedAt": { "type": "integer" },
+        "rewardPoints": { "type": "integer" },
+        "assignedDepartment": { "type": "string" },
+        "masterTicketId": { "type": "string" },
+        "fixedMediaUrl": { "type": "string" },
+        "aiAnalysis": {
+          "type": "object",
+          "properties": {
+            "summary": { "type": "string" },
+            "suggestedDepartment": { "type": "string" }
+          }
+        }
+      },
+      "required": ["title", "category", "urgency", "location", "reporterId", "createdAt"]
+    },
+    "Department": {
+      "title": "Department",
+      "description": "Government department information.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "category": { "type": "string" }
+      },
+      "required": ["name", "category"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "User profiles."
+    },
+    "/issues/{issueId}": {
+      "schema": "Issue",
+      "description": "Reported issues."
+    },
+    "/departments/{deptId}": {
+      "schema": "Department",
+      "description": "Government departments."
+    }
+  }
+}
